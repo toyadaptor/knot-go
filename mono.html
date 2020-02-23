@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+		<title>monologue</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<script src="https://unpkg.com/vue"></script>
+		<script src="https://unpkg.com/vue-router"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+		<script src="/assets/scripts/jquery-3.3.1.min.js"></script>
+		<script src="/assets/scripts/jquery.jplayer.min.js"></script>
+		<link href='http://fonts.googleapis.com/css?family=Noto+Sans' rel='stylesheet' type='text/css'>
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp" crossorigin="anonymous">
+    </head>
+    <body>
+        <div id="app" class="container">
+	    <mono-header></mono-header>
+            <div class="body">
+                <router-view></router-view>
+            </div>
+	    <mono-footer></mono-footer>
+        </div>
+
+        <script type="text/x-template" id="monoDay">
+            <div>
+                <div>
+                    <div class="smallWidth">
+                        <router-link v-if="MonoMove.PrevKnot" :to="{name: 'monoDayIt', params:{knotday: MonoMove.PrevKnot}}"><i class="fas fa-angle-double-left" /> </router-link>
+                    </div><div class="smallWidth">
+		    	<h5>${ Knotday }</h5>
+		    </div><div class="smallWidth">
+                        <router-link v-if="MonoMove.NextKnot" :to="{name: 'monoDayIt', params:{knotday: MonoMove.NextKnot}}"><i class="fas fa-angle-double-right" /></router-link>
+                    </div>
+                </div>
+
+                <div v-for="m in Monos" class="piece">
+			<mono-content :contentParsed="m.ContentParsed"></mono-content>
+                    <span class="small">
+                        <router-link v-if="m.Knot == ''" :to="{name:'monoOneIt', params:{id: m.Id}}">${m.Realday}</router-link>
+                        <router-link v-else :to="{name:'monoOneIt', params:{id: m.Id}}">${m.Knot}</router-link>
+                    </span>
+                </div>
+
+                <mono-create></mono-create>
+            </div>
+        </script>
+
+        <script type="text/x-template" id="monoOne">
+            <div>
+                <div>
+                    <div class="smallWidth">
+			    <span v-for="knot in Mono.Knots">
+				<router-link :to="{name: 'monoOneIt', params: {id: knot.Id}}">${knot.Knot}</router-link>.
+			    </span>
+			    <i class="fas fa-angle-double-right" v-if="Mono.Knots" />
+		    </div><div class="smallWidth">
+			    <h5><span v-if="Mono.Knot == ''">${Mono.Changed}</span> <span v-else>${Mono.Knot}</span></h5>
+		    </div><div class="smallWidth">
+			    <i class="fas fa-angle-double-left" />
+			    <router-link :to="{name: 'monoDayIt', params: {knotday: Mono.Knotday}}"> ${Mono.Knotday} </router-link>
+		    </div>
+                </div>
+
+		<mono-content :contentParsed="Mono.ContentParsed"></mono-content>
+
+                <mono-modify :parentLoad="load"></mono-modify>
+            </div>
+        </script>
+
+        <script type="text/x-template" id="huau">
+            <div>
+                <h3 class="text-center mb-3">huau</h3>
+                <div class="form-group">
+                    <input v-model="userid" type="text" />
+                    <input v-model="passwd" type="password" />
+                    <button v-on:click="login" type="button">verify</button>
+                </div>
+            </div>
+        </script>
+
+        <script type="text/x-template" id="monoThingCreate">
+            <div>
+                <div v-if="Me.Islogin" class="thing">
+                    <textarea v-model="Mono.Content" class="content"></textarea>
+                    <button v-on:click="save" type="button">save</button>
+                </div>
+            </div>
+        </script>
+
+        <script type="text/x-template" id="monoThingModify">
+            <div>
+                <div v-if="Me.Islogin" class="thing">
+		    <a href="#" v-on:click="selectfile"><i class="fas fa-cloud-upload-alt" /></a> <br/>
+		    <input style="display:none" type="file" name="file" id="file" @change="upload" />
+                    <input v-model="Mono.KnotFrom" type="text" class="" placeholder="Connecting with a knot" />
+		    <input v-model="Mono.Realday" type="text" class="" placeholder="Base date" value="Mono.Realday"/>
+		    <input v-model="Mono.Knot" type="text" class="" placeholder="Making a knot" />
+                    <textarea v-model="Mono.Content" class="content"></textarea>
+                    <button v-on:click="save" type="button">save</button>
+                </div>
+            </div>
+        </script>
+
+        <script type="text/x-template" id="monoLoginAs">
+            <div v-if="Me.Islogin" class="loginas">
+                <span>${Me.Userid}</span> <a v-on:click="logout" href="#">logout</a>
+            </div>
+        </script>
+
+        <script type="text/x-template" id="monoHeader">
+            <div class="header">
+		    <div class="musicbox">
+			<div id="jquery_jplayer"></div>
+			<div id="jp_container" class="demo-container">
+				<p>
+					<span class="track-name">nothing</span>
+					<span class="extra-play-info"></span>
+					<span><a class="jp-play" href="#" style="display:none">Play</a></span>
+					<span><a class="jp-pause" href="#" style="display:none">Pause</a></span>
+				</p>
+			</div>
+		    </div>
+
+                <div v-html="MonoHeader.Content"></div>
+		<router-link to="/"><span class="logo">monologue</span></router-link>
+		<mono-loginas></mono-loginas>
+            </div>
+        </script>
+        <script type="text/x-template" id="monoFooter">
+            <div>
+                <div class="footer" v-html="MonoFooter.Content">
+                </div>
+            </div>
+        </script>
+
+
+        <script>
+            Vue.use(VueRouter)
+            Object.defineProperty(Vue.prototype, '$axios', { value: axios });
+
+            Vue.component('mono-loginas', {
+                template: '#monoLoginAs',
+                delimiters: ['${', '}'],
+                data: function(){
+                    return {
+                        Me: {}
+                    }
+                },
+                mounted: function(){
+                    this.islogin()
+                },
+                watch: {
+                    '$route' (to, from) {
+                        this.islogin()
+                    }
+                },
+                methods: {
+                    logout: function(){
+                        let self = this
+                        this.$axios.post('/api/nothing')
+                            .then(function(response){
+                                console.log(response)
+                                self.$router.push({ name: 'monoDay' })
+                            })
+                    },
+                    islogin: function(){
+                        let self = this
+                        this.$axios.post('/api/me')
+                            .then(function (response) {
+                                self.Me = response.data
+                            })
+                            .catch(function (e) {
+                                console.log(e)
+                            })
+                    }
+                }
+            })
+
+            Vue.component('mono-create', {
+                template: '#monoThingCreate',
+                delimiters: ['${', '}'],
+                data: function(){
+                    return {
+                        Mono: {
+                            Content: '',
+                            Realday: '',
+                            Knot: '',
+                            KnotFrom: ''
+                        },
+                        Me: {}
+                    }
+                },
+                mounted: function(){
+                    this.islogin()
+                },
+                methods: {
+                    save: function(){
+                        console.log('now data:', this.Mono)
+                        let self = this
+                        this.$axios.post('/api/mono/one/', this.Mono)
+                            .then(function (response) {
+                                console.log('mono save?', response.data)
+                                self.$router.push({ name: 'monoOneIt', params: {id: response.data.Id } })
+                            })
+                            .catch(function (e) {
+                                console.log(e)
+                            })
+                    },
+                    islogin: function(){
+                        let self = this
+                        this.$axios.post('/api/me')
+                        .then(function (response) {
+                            self.Me = response.data
+                        })
+                        .catch(function (e) {
+                            console.log(e)
+                        })
+                    }
+                }
+            })
+
+            Vue.component('mono-modify', {
+                template: '#monoThingModify',
+                delimiters: ['${', '}'],
+                props: [ 'parentLoad' ],
+                data: function(){
+                    return {
+                        Mono: {},
+                        Me: {}
+                    }
+                },
+                mounted: function(){
+                    this.islogin()
+                    this.load()
+                },
+                methods: {
+                    load: function(){
+                        let self = this
+                        let id = self.$route.params.id
+
+                        this.$axios.get('/api/mono/one/' + id)
+                            .then(function (response) {
+                                console.log('load for modifying => ', response.data)
+                                self.Mono = response.data
+                                let knots = response.data.Knots
+				if(!knots) return
+                                for(let i=0; i<knots.length; i++)
+                                    self.Mono.KnotFrom += knots[i].Knot + '. '
+                            })
+                            .catch(function (e) {
+                                console.log(e)
+                            });
+
+                    },
+                    save: function(){
+                        console.log('now data:', this.Mono)
+                        let self = this
+                        let id = self.$route.params.id
+                        console.log('url', '/api/mono/one/' + id)
+                        this.$axios.put('/api/mono/one/' + id, this.Mono)
+                            .then(function (response) {
+                                console.log('mono modify??', response, response.data)
+                                self.parentLoad()
+                            })
+                            .catch(function (e) {
+                                console.log(e)
+                            })
+                    },
+                    islogin: function(){
+                        let self = this
+                        this.$axios.post('/api/me')
+                            .then(function (response) {
+                                self.Me = response.data
+                            })
+                            .catch(function (e) {
+                                console.log(e)
+                            })
+                    },
+			upload: function(){
+				let formData = new FormData();
+				let filename = this.Mono.Realday;
+				let imagefile = document.querySelector('#file');
+				let self = this
+				formData.append("file", imagefile.files[0]);
+				formData.append("filename", filename);
+				axios.post('/upload', formData, {
+				    headers: {
+				      'Content-Type': 'multipart/form-data'
+				    }
+				}).then(function (response){
+					console.log('upload response', response)
+					self.Mono.Content += "\n" + response.data.Added;
+				})
+				.catch(function(e){
+					console.log('upload eror', e)
+				});
+			},
+			selectfile: function(e){
+				e.preventDefault();
+				var imagefile = document.querySelector('#file');
+				imagefile.click();
+			}
+                }
+            })
+
+            Vue.component('monoDay', {
+                template: '#monoDay',
+                delimiters: ['${', '}'],
+                components: {
+                    'mono-create': Vue.component('mono-create')
+                },
+                data: function(){
+                    return {
+                        Monos: [],
+                        MonoMove: {},
+                        Knotday: ''
+                    }
+                },
+                mounted: function(){ this.load() },
+                watch: {
+                    '$route': function(to, from) { this.load() }
+                },
+                methods: {
+                    load: function(){
+                        console.log('monoDay this.$route.params.knotday: ', this.$route.params.knotday)
+                        let self = this
+                        let knotday = this.$route.params.knotday ? this.$route.params.knotday : ''
+                        console.log('knotday', knotday)
+                        this.$axios.get('/api/mono/day/' + knotday)
+                            .then(function (response) {
+                                console.log('mono list?', response)
+                                self.Monos = response.data.Monos
+                                self.Knotday = response.data.Knotday
+                                self.MonoMove = response.data.MonoMove
+                            })
+                            .catch(function (e) {
+                                console.log(e)
+                            })
+
+                    }
+                }
+            })
+
+            Vue.component('monoOne', {
+                template: '#monoOne',
+                delimiters: ['${', '}'],
+                components: {
+                    'mono-modify': Vue.component('mono-modify')
+                },
+                data: function(){
+			return {Mono: {}}
+                },
+                watch: {
+                    '$route': function(to, from) { this.load(); console.log('-------------')}
+                },
+                mounted: function(){
+                    this.load()
+                },
+                methods: {
+                    load: function(){
+                        let self = this
+                        console.log('self.$route', self.$route)
+                        let id = self.$route.params.id
+
+                        console.log('call /mono/one/' + id)
+                        this.$axios.get('/api/mono/one/' + id)
+                            .then(function (response) {
+                                console.log('load for view => ', response.data)
+                                self.Mono = response.data
+                            });
+                    }
+                }
+            })
+
+		Vue.component('monoContent', {
+			delimiters: ['${', '}'],
+			functional: true,
+			render: function (h, context) {
+				var content = context.props.contentParsed
+				content = Vue.compile('<span>' + content + '</span>')
+				return h(content)
+			}
+
+		});
+
+            Vue.component('monoHeader', {
+                template: '#monoHeader',
+                delimiters: ['${', '}'],
+                components: {
+                    'mono-header': Vue.component('mono-header')
+                },
+                data: function(){
+                    return {MonoHeader: {}}
+                },
+                mounted: function(){
+                    this.load()
+                },
+                methods: {
+                    load: function(){
+                        let self = this
+
+                        this.$axios.get('/api/mono/header')
+                            .then(function (response) {
+                                console.log('load for header => ', response.data)
+                                self.MonoHeader = response.data
+                            })
+                            .catch(function (e) {
+                                console.log(e)
+                            });
+                    }
+                }
+            })
+
+            Vue.component('monoFooter', {
+                template: '#monoFooter',
+                delimiters: ['${', '}'],
+                components: {
+                    'mono-footer': Vue.component('mono-footer')
+                },
+                data: function(){
+                    return {MonoFooter: {}}
+                },
+                mounted: function(){
+                    this.load()
+                },
+                methods: {
+                    load: function(){
+                        let self = this
+
+                        this.$axios.get('/api/mono/footer')
+                            .then(function (response) {
+                                console.log('load for footer => ', response.data)
+                                self.MonoFooter = response.data
+                            })
+                            .catch(function (e) {
+                                console.log(e)
+                            });
+
+                    }
+                }
+            })
+
+            Vue.component('huau', {
+                template: '#huau',
+                delimiters: ['${', '}'],
+                data: function(){
+                    return {
+                        userid: '',
+                        passwd: ''
+                    }
+                },
+		load: function(){
+			$('.form-group input[type=text]').select();
+
+		},
+                methods: {
+                    login: function(){
+                        console.log(this.userid, this.passwd)
+
+                        let self = this
+                        this.$axios.get('/api/huau', {
+                            params: {
+                                Userid: this.userid,
+                                Passwd: this.passwd
+                            }
+                        })
+                        .then(function (response) {
+                            console.log('huau response', response)
+                            self.$router.push({ name: 'monoDay' })
+                        })
+                        .catch(function (e) {
+                            console.log(e)
+                        })
+                    }
+                }
+            })
+
+
+            const router = new VueRouter({
+                mode: 'history',
+                routes: [
+                    { path: '/', redirect: '/mono/day/' },
+                    { path: '/mono', redirect: '/mono/day/' },
+                    { path: '/mono/day/', name: 'monoDay', component: Vue.component('monoDay') },
+                    { path: '/mono/day/:knotday', name: 'monoDayIt', component: Vue.component('monoDay') },
+                    { path: '/mono/one/:id', name: 'monoOneIt', component: Vue.component('monoOne') },
+                    { path: '/huau', name: 'huau', component: Vue.component('huau') }
+                ]
+            })
+
+            new Vue({
+                el: '#app',
+                delimiters: ['${', '}'],
+                router: router
+            })
+
+        </script>
+
+        <style>
+            @import url(http://fonts.googleapis.com/earlyaccess/notosanskr.css);
+            * {
+                font-family: 'Noto Sans KR', sans-serif;
+                font-size: 0.99em;
+                -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+                -moz-box-sizing: border-box;    /* Firefox, other Gecko */
+                box-sizing: border-box;         /* Opera/IE 8+ */
+            }
+
+            body {
+                color: 000;
+            }
+
+            a {
+                color: black;
+                font-weight: bolder;
+                text-decoration: none;
+            }
+
+            img { 
+	    max-width: 100%; border-radius: 3px; 
+	    display: block;
+	    margin-left: auto;
+	    margin-right: auto;
+	    }
+
+            textarea, input, button {
+                width: 100%;
+                border: 1px solid #ccc;
+                margin: 2px 0px;
+                background-color: #fff !important;
+            }
+
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+                margin-left: auto;
+                margin-right: auto;
+                max-width:550px;
+            }
+
+            .smallWidth {
+                width: 33.33%;
+                width: calc(100% / 3);
+                display: inline-block;
+                text-align: center;
+            }
+	    .center {
+		    text-align: center;
+	    }
+
+            .header {}
+            .header .logo { font-weight: bold; font-size: 1.5em; }
+            .header img { margin-top: 10px; }
+            .body { min-height: 280px }
+            .footer {}
+            .piece { margin-bottom: 10px; }
+
+            .thing { margin-top: 30px; }
+            .thing .content { height: 100px; }
+
+            .loginas { float: right; }
+            .small { font-size: 0.8em; }
+
+	    .musicbox { font-size: 0.8em; }
+
+        </style>
+
+	<script>
+	var	my_jPlayer = $("#jquery_jplayer"),
+		my_trackName = $("#jp_container .track-name"),
+		my_playState = $("#jp_container .play-state"),
+		my_extraPlayInfo = $("#jp_container .extra-play-info");
+
+	var	opt_play_first = false, // If true, will attempt to auto-play the default track on page loads. No effect on mobile devices, like iOS.
+		opt_auto_play = true, // If true, when a track is selected, it will auto-play.
+		opt_text_playing = "Now playing", // Text when playing
+		opt_text_selected = "Track selected"; // Text when not playing
+
+	// A flag to capture the first track
+	var first_track = true;
+
+	// Change the time format
+	$.jPlayer.timeFormat.padMin = false;
+	$.jPlayer.timeFormat.padSec = false;
+	$.jPlayer.timeFormat.sepMin = " min ";
+	$.jPlayer.timeFormat.sepSec = " sec";
+
+	// Initialize the play state text
+	my_playState.text(opt_text_selected);
+
+	my_jPlayer.jPlayer({
+		ready: function () {
+			musicSelect('/assets/sounds/elephantlovemix.mp3', 'vidulgi ooyoo - elephant(love mix)');
+			$("#jp_container .track-default").click();
+		},
+		timeupdate: function(event) {
+			var xp = parseInt(event.jPlayer.status.currentPercentAbsolute, 10);
+			xp = parseInt(xp / 10, 10);
+			var line = '';
+			for(var i=0; i<10; i++){
+				line += i == xp ? '*' : '.';
+			}
+			my_extraPlayInfo.text(line);
+		},
+		play: function(event) {
+			my_playState.text(opt_text_playing);
+		},
+		pause: function(event) {
+			my_playState.text(opt_text_selected);
+		},
+		ended: function(event) {
+			my_playState.text(opt_text_selected);
+		},
+		cssSelectorAncestor: "#jp_container",
+		supplied: "mp3",
+		wmode: "window",
+		loop: true
+	});
+
+	function musicSelect(mfile, mname){
+		my_trackName.text('"' + mname + '"');
+		my_jPlayer.jPlayer("setMedia", {
+			mp3: mfile
+		});
+		
+		my_jPlayer.jPlayer("play");
+	}
+	</script>
+
+    </body>
+</html>
