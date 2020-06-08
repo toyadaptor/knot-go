@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-		<title>monologue</title>
+		<title>knot</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<script src="https://unpkg.com/vue"></script>
@@ -34,11 +34,13 @@
                 </div>
 
                 <div v-for="m in Monos" class="piece">
-			<mono-content :contentParsed="m.ContentParsed"></mono-content>
-                    <span class="small">
+                    <p style="margin-bottom: 3px;">
                         <router-link v-if="m.Knot == ''" :to="{name:'monoOneIt', params:{id: m.Id}}">${m.Realday}</router-link>
                         <router-link v-else :to="{name:'monoOneIt', params:{id: m.Id}}">${m.Knot}</router-link>
-                    </span>
+                    </p>
+		    <mono-content :contentParsed="m.ContentParsed"></mono-content>
+
+		    <div style="padding-bottom: 30px;"></div>
                 </div>
 
                 <mono-create></mono-create>
